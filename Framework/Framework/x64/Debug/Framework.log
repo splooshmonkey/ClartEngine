@@ -1,6 +1,2 @@
-﻿  LevelEditor.cpp
-  Map.cpp
-  TextureManager.cpp
-  main.cpp
-  Generating Code...
+﻿  main.cpp
   Framework.vcxproj -> D:\Uni\3rd Year\Clart Engine with networking\Framework\x64\Debug\Framework.exe

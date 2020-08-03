@@ -32,35 +32,35 @@ int main(int argc, char* argv[])
 	int height = h.cast<int>();
 
 	/*								FMOD audio code starts here								*/
-	FMOD::Studio::System* system = NULL;
-	FMOD::Studio::System::create(&system);
+	FMOD::Studio::System* system = NULL; //initialises a pointer to a studio system
+	FMOD::Studio::System::create(&system); //calls a create function
 
-	if (system) {
+	if (system) {	//check to see if the system got created
 		std::cout << "High-level (fmod studio) audio system created." << "\n";
 	}
 
-	FMOD::System* lowLevelSystem = NULL;
-	system->getLowLevelSystem(&lowLevelSystem);
+	FMOD::System* lowLevelSystem = NULL; //creates a FMOD system pointer
+	system->getLowLevelSystem(&lowLevelSystem); //binds it to the studio system
 
-	if (lowLevelSystem) {
+	if (lowLevelSystem) { //another check
 		std::cout << "Low-level (fmod) audio system created." << "\n";
 	}
 
-	lowLevelSystem->setSoftwareFormat(0, FMOD_SPEAKERMODE_STEREO, 0);
-	system->initialize(1024, FMOD_STUDIO_INIT_NORMAL, FMOD_INIT_NORMAL, NULL);
+	lowLevelSystem->setSoftwareFormat(0, FMOD_SPEAKERMODE_STEREO, 0); //sets speaker mode to stereo
+	system->initialize(1024, FMOD_STUDIO_INIT_NORMAL, FMOD_INIT_NORMAL, NULL); //intialises the studio system
 
-	FMOD::Sound* music = NULL;
+	FMOD::Sound* music = NULL; //creates a sound pointer for my music
 
-	lowLevelSystem->createSound("music.wav", FMOD_LOOP_OFF, NULL, &music);
+	lowLevelSystem->createSound("music.wav", FMOD_LOOP_NORMAL, NULL, &music); //reads in my wav file and binds it to the pointer
+	//I used FMOD LOOP NORMAL because my sound is background music and should be played constantly
 
-
-	if (music) {
+	if (music) {	//another test
 		std::cout << "Sound loaded." << "\n";
 	}
 
-	music->setDefaults(16400, 0);
+	music->setDefaults(16400, 0); //allows us to adjust the sound file with speed and pitch etc.
 
-	FMOD::Channel* playerChannel = NULL;
+	FMOD::Channel* backgroundMusicChannel = NULL; //channel pointer for my music
 	
 	if (enet_initialize() != 0) //initializes enet
 	{
@@ -100,7 +100,7 @@ int main(int argc, char* argv[])
 
 		frameStart = SDL_GetTicks();  //Sets frame start to how many seconds its been since we initialised SDL
 
-		lowLevelSystem->playSound(music, NULL, false, &playerChannel); //plays my music file while the game is running
+		lowLevelSystem->playSound(music, NULL, false, &backgroundMusicChannel); //plays my music file while the game is running
 
 		while (enet_host_service(client, &enetEvent, 0) > 0) //While we are connected to server and hit the recieve event, cout a message saying so
 		{
