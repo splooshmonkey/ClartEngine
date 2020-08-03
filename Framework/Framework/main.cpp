@@ -1,6 +1,10 @@
 #include "Game.h"
 #include <enet\enet.h>
 #include "LevelEditor.h"
+#include <fmod_studio.hpp>
+#include <fmod.hpp>
+
+
 Game* game = nullptr;
 Lua* lua = nullptr;
 
@@ -12,24 +16,13 @@ int main(int argc, char* argv[])
 
 	Uint32 frameStart;
 	int frameTime;
-
+	
+	/*								lua references start here								*/
 	game = new Game();
 	lua = new Lua();
 
-	if (enet_initialize() != 0)
-	{
-		std::cout << "Enet failed to initialise!" << "\n\n";
-	}
-
-	/* Much of this will be familiar from the server code. What differs
-	is the inclusion of an Peer. This is basically ENet's way of tracking
-	what you're connected to. Since our Client will be initialising the
-	connection, they need a peer to store information about the server they're
-	connecting to. */
-
-
 	lua_State* F = lua->initLuaFile("level.lua"); // init which lua file I want
-	LuaRef t = lua->getLuaGlobal(F, "window"); // get the top index of the lua table I want to read
+	LuaRef t = lua->getLuaGlobal(F, "window"); // get the top index of the lua stack I want to read
 	LuaRef title = lua->getLuaValue(t, "title"); // get title from the lua file and assign it to LuaRef title
 	LuaRef w = lua->getLuaValue(t, "width");
 	LuaRef h = lua->getLuaValue(t, "height");
@@ -38,9 +31,46 @@ int main(int argc, char* argv[])
 	int width = w.cast<int>();
 	int height = h.cast<int>();
 
+	/*								FMOD audio code starts here								*/
+	FMOD::Studio::System* system = NULL;
+	FMOD::Studio::System::create(&system);
+
+	if (system) {
+		std::cout << "High-level (fmod studio) audio system created." << "\n";
+	}
+
+	FMOD::System* lowLevelSystem = NULL;
+	system->getLowLevelSystem(&lowLevelSystem);
+
+	if (lowLevelSystem) {
+		std::cout << "Low-level (fmod) audio system created." << "\n";
+	}
+
+	lowLevelSystem->setSoftwareFormat(0, FMOD_SPEAKERMODE_STEREO, 0);
+	system->initialize(1024, FMOD_STUDIO_INIT_NORMAL, FMOD_INIT_NORMAL, NULL);
+
+	FMOD::Sound* music = NULL;
+
+	lowLevelSystem->createSound("music.wav", FMOD_LOOP_OFF, NULL, &music);
+
+
+	if (music) {
+		std::cout << "Sound loaded." << "\n";
+	}
+
+	music->setDefaults(16400, 0);
+
+	FMOD::Channel* playerChannel = NULL;
+	
+	if (enet_initialize() != 0) //initializes enet
+	{
+		std::cout << "Enet failed to initialise!" << "\n\n";
+	}
+
+	/*								Enet code starts here									*/
 	ENetAddress address;
 	ENetHost* client;
-	ENetPeer* peer;
+	ENetPeer* peer; //tracks what we are connecting to
 	ENetEvent enetEvent;
 
 	client = enet_host_create(NULL, 1, 2, 0, 0);
@@ -53,15 +83,15 @@ int main(int argc, char* argv[])
 	enet_address_set_host(&address, "localhost");
 	address.port = 1234;
 
-	/* Now we're trying to connect to the server. We include who we are,
-	the address to establish the connection to, the number of channels, and a
-	generic data variable we can use to say something to the server (currently 0). */
 
 	peer = enet_host_connect(client, &address, 2, 0);
 
 	if (peer == NULL) {
 		std::cout << "No available peers for initializing an ENet connection.\n";
 	}
+
+
+	/*								Initialises main game loop							*/
 
 	game->init(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, false); //Initialises the engine and sets parameters for the window
 
@@ -70,7 +100,9 @@ int main(int argc, char* argv[])
 
 		frameStart = SDL_GetTicks();  //Sets frame start to how many seconds its been since we initialised SDL
 
-		while (enet_host_service(client, &enetEvent, 0) > 0) // connecting to the server bit 
+		lowLevelSystem->playSound(music, NULL, false, &playerChannel); //plays my music file while the game is running
+
+		while (enet_host_service(client, &enetEvent, 0) > 0) //While we are connected to server and hit the recieve event, cout a message saying so
 		{
 			switch (enetEvent.type) {
 
@@ -92,8 +124,8 @@ int main(int argc, char* argv[])
 		}
 		*/
 	}
-	enet_host_destroy(client);
-	atexit(enet_deinitialize);
+	enet_host_destroy(client); //closes the client instance
+	atexit(enet_deinitialize); //deinitializes enet
 
 	game->clean(); //gets rid off everything when we close the game
 
