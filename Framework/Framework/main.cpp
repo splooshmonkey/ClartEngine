@@ -16,6 +16,7 @@ int main(int argc, char* argv[])
 
 	Uint32 frameStart;
 	int frameTime;
+
 	
 	/*								lua references start here								*/
 	game = new Game();
@@ -30,6 +31,8 @@ int main(int argc, char* argv[])
 	std::string titleString = title.cast<std::string>();
 	int width = w.cast<int>();
 	int height = h.cast<int>();
+
+
 
 	/*								FMOD audio code starts here								*/
 	FMOD::Studio::System* system = NULL; //initialises a pointer to a studio system
@@ -62,12 +65,16 @@ int main(int argc, char* argv[])
 
 	FMOD::Channel* backgroundMusicChannel = NULL; //channel pointer for my music
 	
+	
+
+
+	/*								Enet code starts here									*/
 	if (enet_initialize() != 0) //initializes enet
 	{
 		std::cout << "Enet failed to initialise!" << "\n\n";
 	}
 
-	/*								Enet code starts here									*/
+
 	ENetAddress address;
 	ENetHost* client;
 	ENetPeer* peer; //tracks what we are connecting to
@@ -84,11 +91,12 @@ int main(int argc, char* argv[])
 	address.port = 1234;
 
 
-	peer = enet_host_connect(client, &address, 2, 0);
+	peer = enet_host_connect(client, &address, 2, 0); //trying to connect to the server, saying who we are and the address we want to connect to
 
-	if (peer == NULL) {
+	if (peer == NULL) { //test
 		std::cout << "No available peers for initializing an ENet connection.\n";
 	}
+
 
 
 	/*								Initialises main game loop							*/
